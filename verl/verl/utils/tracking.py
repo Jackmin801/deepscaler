@@ -18,13 +18,13 @@ import dataclasses
 from enum import Enum
 from functools import partial
 from pathlib import Path
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Optional
 
 
 class Tracking(object):
     supported_backend = ['wandb', 'mlflow', 'console']
 
-    def __init__(self, project_name, experiment_name, default_backend: Union[str, List[str]] = 'console', config=None):
+    def __init__(self, project_name: str, experiment_name: str, default_backend: Union[str, List[str]] = 'console', config: Optional[Dict[str, Any]] = None) -> None:
         if isinstance(default_backend, str):
             default_backend = [default_backend]
         for backend in default_backend:
@@ -52,7 +52,7 @@ class Tracking(object):
             self.console_logger = LocalLogger(print_to_console=True)
             self.logger['console'] = self.console_logger
 
-    def log(self, data, step, backend=None):
+    def log(self, data: Dict[str, Any], step: int, backend: Optional[Union[str, List[str]]] = None) -> None:
         for default_backend, logger_instance in self.logger.items():
             if backend is None or default_backend in backend:
                 logger_instance.log(data=data, step=step)
@@ -60,19 +60,19 @@ class Tracking(object):
 
 class _MlflowLoggingAdapter:
 
-    def log(self, data, step):
+    def log(self, data: Dict[str, Any], step: int) -> None:
         import mlflow
         mlflow.log_metrics(metrics=data, step=step)
 
 
-def _compute_mlflow_params_from_objects(params) -> Dict[str, Any]:
+def _compute_mlflow_params_from_objects(params: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     if params is None:
         return {}
 
     return _flatten_dict(_transform_params_to_json_serializable(params, convert_list_to_dict=True), sep='/')
 
 
-def _transform_params_to_json_serializable(x, convert_list_to_dict: bool):
+def _transform_params_to_json_serializable(x: Any, convert_list_to_dict: bool) -> Any:
     _transform = partial(_transform_params_to_json_serializable, convert_list_to_dict=convert_list_to_dict)
 
     if dataclasses.is_dataclass(x):
